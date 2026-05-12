@@ -1,4 +1,4 @@
-from interface.Wuerfelspiel_erweiterung import start_game
+from interface.Wuerfelspiel_erweiterung import wuerfel_spiel
 
 if __name__ == "__main__":
-    start_game()
+    wuerfel_spiel()
