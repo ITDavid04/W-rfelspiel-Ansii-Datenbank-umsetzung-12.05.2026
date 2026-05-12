@@ -1,6 +1,6 @@
 
-from file_managerDavid import save_data, load_data, SaveFormat # Importieren der Funktionen und Klassen aus dem File-Manager-Modul
-from style_config import GOLD, RESET, FETT
+from infrastructure.file_managerDavid import save_data, load_data, SaveFormat # Importieren der Funktionen und Klassen aus dem File-Manager-Modul
+from infrastructure.style_config import GOLD, RESET, FETT
 from rangliste_service import erstelle_rangliste
 
 def sichere_spielstand(alle_wuerfel, max_wuerfe, spieler_index, typ="AUTOSAVE"):
