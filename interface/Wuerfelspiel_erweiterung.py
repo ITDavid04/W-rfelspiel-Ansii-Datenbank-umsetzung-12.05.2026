@@ -10,6 +10,7 @@ from infrastructure.ansii_asset import DICE_ART # Importieren der ASCII-Art für
 from infrastructure.ansii_asset import POKAL 
 from interface.ui_helpers import display_welcome_message
 from infrastructure.style_config import FETT, GOLD, GELB, RESET, CYAN, GRUEN, SILBER, BRONZE # Importieren von Stil-Konfigurationen für die Textausgabe, um die visuelle Gestaltung des Spiels zu verbessern. Diese Stil-Konfigurationen können Farben und Formatierungen enthalten, die verwendet werden, um wichtige Informationen hervorzuheben (z.B. den Namen des Spielers, die gewürfelte Zahl, die Rangliste) und das Spielerlebnis insgesamt ansprechender zu gestalten. Durch den Import dieser Stil-Konfigurationen können wir konsistent formatierte Ausgaben erstellen, die das Spiel visuell ansprechend und leicht verständlich machen. 
+from interface.ui_helpers import display_loading_screen
 
 
 def animiere_wurf():
@@ -68,6 +69,7 @@ def spielstand_laden(): #   Diese Funktion zeigt die verfügbaren Spielstände a
     return None
 
 def wuerfel_spiel(): # Hauptfunktion, die den Ablauf des Würfelspiels steuert. Sie ermöglicht das Laden eines bestehenden Spielstands oder das Starten eines neuen Spiels, verwaltet die Spielrunden und zeigt am Ende die Siegerehrung an.
+    display_loading_screen() # Aufruf der Funktion display_loading_screen, um eine Ladeanimation anzuzeigen, bevor das Spiel beginnt. Dies verbessert die Benutzererfahrung, indem es den Eindruck vermittelt, dass das System vorbereitet wird, und schafft eine ansprechende Atmosphäre für den Start des Spiels.
     display_welcome_message()
     info = spielstand_laden() # Aufruf der Funktion spielstand_laden, um zu versuchen, einen bestehenden Spielstand zu laden. Das Ergebnis wird in der Variable "info" gespeichert, die entweder ein Dictionary mit den geladenen Daten oder None enthält, wenn kein Spielstand geladen wurde.
     
