@@ -1,7 +1,7 @@
 
 from infrastructure.file_managerDavid import save_data, load_data, SaveFormat # Importieren der Funktionen und Klassen aus dem File-Manager-Modul
 from infrastructure.style_config import GOLD, RESET, FETT
-from rangliste_service import erstelle_rangliste
+from application.rangliste_service import erstelle_rangliste
 
 def sichere_spielstand(alle_wuerfel, max_wuerfe, spieler_index, typ="AUTOSAVE"):
     dateiname = f"wuerfel_projekt_{typ}" # Erzeugt z.B. wuerfel_projekt_AUTOSAVE
