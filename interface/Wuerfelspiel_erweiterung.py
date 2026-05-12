@@ -1,15 +1,15 @@
 import os
 import time
 import random
-from wuerfel import Wuerfel
-from file_managerDavid import SaveFormat, get_all_savefiles
-from rangliste_service import erstelle_rangliste
-from wuerfelspiel_service import sichere_spielstand, lade_spielstand_aufbereitet
-import wuerfelspiel_service as service
-from ansii_asset import DICE_ART # Importieren der ASCII-Art für die Würfel, um sie später im Spiel anzuzeigen. Diese Kunstwerke sind in einem Dictionary organisiert, das die Augenzahlen 1-6 als Schlüssel und die entsprechenden ASCII-Art-Darstellungen als Werte enthält. Durch den Import dieser Kunstwerke können wir eine visuell ansprechende Darstellung der gewürfelten Zahlen in der Konsole erstellen, was das Spielerlebnis verbessert und die Ausgabe interessanter gestaltet.
-from ansii_asset import POKAL 
+from domain.wuerfel import Wuerfel
+from infrastructure.file_managerDavid import SaveFormat, get_all_savefiles
+from application.rangliste_service import erstelle_rangliste
+from application.wuerfelspiel_service import sichere_spielstand, lade_spielstand_aufbereitet
+import application.wuerfelspiel_service as service
+from infrastructure.ansii_asset import DICE_ART # Importieren der ASCII-Art für die Würfel, um sie später im Spiel anzuzeigen. Diese Kunstwerke sind in einem Dictionary organisiert, das die Augenzahlen 1-6 als Schlüssel und die entsprechenden ASCII-Art-Darstellungen als Werte enthält. Durch den Import dieser Kunstwerke können wir eine visuell ansprechende Darstellung der gewürfelten Zahlen in der Konsole erstellen, was das Spielerlebnis verbessert und die Ausgabe interessanter gestaltet.
+from infrastructure.ansii_asset import POKAL 
 from ui_helpers import display_welcome_message
-from style_config import FETT, GOLD, GELB, RESET, CYAN, GRUEN, SILBER, BRONZE # Importieren von Stil-Konfigurationen für die Textausgabe, um die visuelle Gestaltung des Spiels zu verbessern. Diese Stil-Konfigurationen können Farben und Formatierungen enthalten, die verwendet werden, um wichtige Informationen hervorzuheben (z.B. den Namen des Spielers, die gewürfelte Zahl, die Rangliste) und das Spielerlebnis insgesamt ansprechender zu gestalten. Durch den Import dieser Stil-Konfigurationen können wir konsistent formatierte Ausgaben erstellen, die das Spiel visuell ansprechend und leicht verständlich machen. 
+from infrastructure.style_config import FETT, GOLD, GELB, RESET, CYAN, GRUEN, SILBER, BRONZE # Importieren von Stil-Konfigurationen für die Textausgabe, um die visuelle Gestaltung des Spiels zu verbessern. Diese Stil-Konfigurationen können Farben und Formatierungen enthalten, die verwendet werden, um wichtige Informationen hervorzuheben (z.B. den Namen des Spielers, die gewürfelte Zahl, die Rangliste) und das Spielerlebnis insgesamt ansprechender zu gestalten. Durch den Import dieser Stil-Konfigurationen können wir konsistent formatierte Ausgaben erstellen, die das Spiel visuell ansprechend und leicht verständlich machen. 
 
 
 def animiere_wurf():
