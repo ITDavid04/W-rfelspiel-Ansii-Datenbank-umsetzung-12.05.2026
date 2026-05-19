@@ -38,10 +38,10 @@ def display_welcome_message():
 ╚══════════════════════════════════════════════════════════════════════════════════╝ 
 {RESET}"""
     
-    console.print(Panel(welcome_text, style="bold cyan", title="Würfelspiel v1.0"))
+    console.print(Panel(welcome_text, style="bold yellow", title="Würfelspiel v1.0"))
     print(f"{GOLD}Willkommen zum Würfelabenteur! Bereit für eine Runde?{RESET}\n")
 
-def display_loading_screen(dauer=4):
+def display_loading_screen(dauer=5):
     """Simuliert den Ladevorgang aus Code 1"""
     end_time = time.time() + dauer
     
