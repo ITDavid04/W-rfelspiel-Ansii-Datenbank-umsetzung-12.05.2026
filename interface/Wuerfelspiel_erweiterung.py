@@ -1,18 +1,18 @@
 import os
 import time
 import random
+import json 
+import sqlite3
 from domain.wuerfel import Wuerfel
-from infrastructure.file_managerDavid import SaveFormat, get_all_savefiles
 from application.rangliste_service import erstelle_rangliste
-from application.wuerfelspiel_service import sichere_spielstand, lade_spielstand_aufbereitet
+from application.wuerfelspiel_service import sichere_spielstand
 import application.wuerfelspiel_service as service
-from infrastructure.ansii_asset import DICE_ART # Importieren der ASCII-Art für die Würfel, um sie später im Spiel anzuzeigen. Diese Kunstwerke sind in einem Dictionary organisiert, das die Augenzahlen 1-6 als Schlüssel und die entsprechenden ASCII-Art-Darstellungen als Werte enthält. Durch den Import dieser Kunstwerke können wir eine visuell ansprechende Darstellung der gewürfelten Zahlen in der Konsole erstellen, was das Spielerlebnis verbessert und die Ausgabe interessanter gestaltet.
-from infrastructure.ansii_asset import POKAL 
-from interface.ui_helpers import display_welcome_message
-from infrastructure.style_config import FETT, GOLD, GELB, RESET, CYAN, GRUEN, SILBER, BRONZE # Importieren von Stil-Konfigurationen für die Textausgabe, um die visuelle Gestaltung des Spiels zu verbessern. Diese Stil-Konfigurationen können Farben und Formatierungen enthalten, die verwendet werden, um wichtige Informationen hervorzuheben (z.B. den Namen des Spielers, die gewürfelte Zahl, die Rangliste) und das Spielerlebnis insgesamt ansprechender zu gestalten. Durch den Import dieser Stil-Konfigurationen können wir konsistent formatierte Ausgaben erstellen, die das Spiel visuell ansprechend und leicht verständlich machen. 
-from interface.ui_helpers import display_loading_screen
+from infrastructure.ansii_asset import DICE_ART, POKAL
+from interface.ui_helpers import display_welcome_message, display_loading_screen
+from infrastructure.style_config import FETT, GOLD, GELB, RESET, CYAN, GRUEN, SILBER, BRONZE, ROT
+from infrastructure.sqlite_repository import SQLiteRepository
 
-
+# ... restlicher Code
 def animiere_wurf():
     # Wir zeigen 10 zufällige Würfelbilder hintereinander
     for i in range(12):
@@ -32,40 +32,78 @@ def print_dice(zahl): # Zahl ist die Augenzahl, die gewürfelt wurde
         for zeile in DICE_ART[zahl]:# Iterieren über die Zeilen der ASCII-Art für die gewürfelte Zahl und Ausgabe jeder Zeile mit der gewünschten Farbe (CYAN) und anschließendem Reset der Farbe
             print(f"{CYAN}{zeile}{RESET}")# Wenn die Augenzahl nicht im DICE_ART-Dictionary vorhanden ist, wird eine Fehlermeldung ausgegeben
 
-def spielstand_laden(): #   Diese Funktion zeigt die verfügbaren Spielstände an und ermöglicht dem Benutzer, einen auszuwählen, um ihn zu laden. Sie gibt ein Dictionary mit den geladenen Daten zurück oder None, wenn kein gültiger Spielstand ausgewählt wurde.
-    dateien = get_all_savefiles("wuerfel_projekt")
-    if not dateien:
-        print("\nKeine alten Spielstände gefunden.")
-        return None
+def spielstand_laden():
+    conn = sqlite3.connect("wuerfel_save.db")
+    cursor = conn.cursor()
     
-    print("\n--- Verfügbare Spielstände (inkl. Backups) ---")
-    for i, dateiname in enumerate(dateien, start=1):# Auflisten der verfügbaren Spielstände mit einer Nummerierung, damit der Benutzer eine Auswahl treffen kann. Es wird nur der Dateiname ohne Pfad angezeigt.
-        anzeigename = os.path.basename(dateiname)# Extrahieren des Dateinamens aus dem vollständigen Pfad, um ihn benutzerfreundlich anzuzeigen
-        print(f"{i}: {anzeigename}")# Ausgabe der Nummerierung und des Dateinamens für jeden verfügbaren Spielstand, damit der Benutzer eine Auswahl treffen kann. Es wird die Nummer (beginnend bei 1) und der Dateiname angezeigt.
+    # 1. Wir holen die Daten mit, um die Namen zu extrahieren
+    cursor.execute("SELECT id, typ, timestamp, daten FROM spielstaende ORDER BY id DESC")
+    speicherungen = cursor.fetchall()
+    conn.close()
+    
+    print("\n--- Verfügbare Spielstände ---")
+    if not speicherungen:
+        print("Keine Spielstände gefunden.")
+    else:
+        for i, (db_id, typ, ts, daten_json) in enumerate(speicherungen, start=1): # Iterieren über die gefundenen Spielstände, wobei "i" die fortlaufende Nummer der Anzeige ist, "db_id" die ID des Spielstands in der Datenbank, "typ" der Typ des Spielstands (z.B. "AUTOSAVE"), "ts" der Timestamp der Speicherung und "daten_json" die gespeicherten Spieldaten im JSON-Format sind. Für jeden Spielstand werden die Daten aus dem JSON-String geladen, die Namen der Spieler*innen extrahiert und eine übersichtliche Anzeige mit der Nummer, dem Timestamp, dem Typ und den Spielernamen erstellt.
+            data = json.loads(daten_json) # Laden der gespeicherten Spieldaten aus dem JSON-String, um Zugriff auf die Informationen zu erhalten, die für die Anzeige benötigt werden (z.B. die Namen der Spieler
+            spieler_namen = ", ".join([s["name"] for s in data["mehrspieler_daten"]]) # Extrahieren der Namen der Spieler*innen aus den geladenen Spieldaten, indem über die Liste "mehrspieler_daten" iteriert und die Namen der Spieler
+            
+            print(f"{CYAN}{i}: {RESET}[{ts}] {FETT}{typ}{RESET}") # Anzeige der Nummer, des Timestamps und des Typs des Spielstands in einer übersichtlichen Formatierung, wobei die Nummer in Cyan, der Typ fett und der Timestamp normal formatiert ist. Anschließend werden die Namen der Spieler*innen angezeigt, um dem Benutzer eine klare Vorstellung davon zu geben, welcher Spielstand geladen wird.
+            print(f"   {GELB}↳ Spieler: {RESET}{spieler_namen}") # Anzeige der Namen der Spieler*innen, die in dem jeweiligen Spielstand enthalten sind, um dem Benutzer zusätzliche Informationen zu geben und die Auswahl des gewünschten Spielstands zu erleichtern. Die Namen werden in Gelb formatiert, um sie hervorzuheben und die Aufmerksamkeit des Benutzers darauf zu lenken.
+            print("-" * 30) # Trennlinie zwischen den Einträgen für eine bessere Lesbarkeit
         
-    wahl = input("\nWelche Nummer laden? (0 für neu): ").strip()  # Eingabeaufforderung für den Benutzer, um die Nummer des gewünschten Spielstands einzugeben. Es wird auch die Option "0" angeboten, um ein neues Spiel zu starten. Die Eingabe wird bereinigt (strip), um unerwünschte Leerzeichen zu entfernen. 
-    if wahl == "0" or wahl == "": return None # Wenn der Benutzer "0" eingibt oder die Eingabe leer ist, wird None zurückgegeben, was signalisiert, dass kein Spielstand geladen werden soll und stattdessen ein neues Spiel gestartet werden kann.
+    
+    print("-" * 30)
+    print(f"{GRUEN}0: Neues Spiel starten{RESET}")
+    print(f"{ROT}9: Datenbank komplett leeren (VORSICHT!){RESET}")
+    
+    wahl = input("\nAuswahl: ").strip()
+    
+    # --- LOGIK FÜR AKTIONEN ---
+    if wahl == "9":
+        bestaetigung = input("Wirklich alle Spielstände unwiderruflich löschen? (j/n): ").lower()
+        if bestaetigung == "j":
+            repo = SQLiteRepository("wuerfel_save.db")
+            repo.leere_datenbank()
+        return None # Zurück zum Start/Neues Spiel
+        
+    if wahl == "0" or wahl == "": 
+        return None
    
     try:
         index = int(wahl) - 1
-        gewaehlte_datei = dateien[index]# Basierend auf der Benutzereingabe wird der Index des ausgewählten Spielstands berechnet (die Eingabe wird um 1 reduziert, da die Anzeige bei 1 beginnt). Anschließend wird der vollständige Pfad der ausgewählten Datei aus der Liste der verfügbaren Spielstände abgerufen.
-        format_typ = SaveFormat(gewaehlte_datei.split('.')[-1].lower())#    Der Formattyp wird aus der Dateiendung der ausgewählten Datei abgeleitet, indem die Endung extrahiert und in Kleinbuchstaben umgewandelt wird. Anschließend wird versucht, diesen String in einen SaveFormat-Enum-Wert zu konvertieren, um den Typ des gespeicherten Spielstands zu bestimmen (z.B. JSON, CSV, etc.).
-        info = lade_spielstand_aufbereitet(gewaehlte_datei, format_typ)# Die Funktion lade_spielstand_aufbereitet wird mit dem Pfad der ausgewählten Datei und dem ermittelten Formattyp aufgerufen, um die Spieldaten zu laden und aufzubereiten. Das Ergebnis wird in der Variable "info" gespeichert, die ein Dictionary mit den geladenen Daten enthält oder None, wenn das Laden fehlschlägt.
+        # Prüfen, ob die Nummer existiert
+        if index < 0 or index >= len(speicherungen):
+            print("❌ Ungültige Auswahl.")
+            return None
+            
+        gewaehlte_id = speicherungen[index][0]
         
-        if info:
-            geladene_wuerfel = [] # Leere Liste, um die geladenen Würfel-Objekte zu speichern
-            for s_info in info["rohdaten"]:# Iteration über die rohen Daten der geladenen Spielstände, um die Würfel-Objekte zu erstellen. Es wird erwartet, dass "rohdaten" eine Liste von Dictionaries enthält, wobei jedes Dictionary Informationen über einen Würfel (z.B. Name und Statistik) enthält.
-                w = Wuerfel(name=s_info["name"], start_statistik=s_info["statistik"])# Für jedes Dictionary in "rohdaten" wird ein neues Würfel-Objekt erstellt, indem der Name und die Statistik aus dem Dictionary extrahiert und an den Konstruktor der Wuerfel-Klasse übergeben werden. Das erstellte Würfel-Objekt wird dann zur Liste "geladene_wuerfel" hinzugefügt, die alle geladenen Würfel-Objekte enthält.
-                geladene_wuerfel.append(w)# Nachdem alle Würfel-Objekte erstellt und in der Liste "geladene_wuerfel" gespeichert wurden, wird ein Dictionary zurückgegeben, das die Liste der geladenen Würfel-Objekte sowie die maximalen Würfe und den Startindex enthält, die ebenfalls aus den geladenen Daten extrahiert wurden. Dieses Dictionary kann dann im Hauptprogramm verwendet werden, um den Spielstand fortzusetzen.
+        # 2. Den gewählten Spielstand aus der DB holen
+        conn = sqlite3.connect("wuerfel_save.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT daten FROM spielstaende WHERE id = ?", (gewaehlte_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            info_raw = json.loads(row[0])
+            
+            # 3. Daten in die Würfel-Objekte umwandeln
+            geladene_wuerfel = []
+            for s_info in info_raw["mehrspieler_daten"]:
+                w = Wuerfel(name=s_info["name"], start_statistik=s_info["statistik"])
+                geladene_wuerfel.append(w)
             
             return {
                 "wuerfel_liste": geladene_wuerfel,
-                "max_wuerfe": info["max_wuerfe"],
-                "start_index": info["start_index"]
+                "max_wuerfe": info_raw.get("max_wuerfe", 30),
+                "start_index": info_raw.get("naechster_spieler_index", 0)
             }
             
-    except Exception as e:# Wenn während des Ladevorgangs ein Fehler auftritt (z.B. ungültige Eingabe, Datei nicht gefunden, ungültiges Format), wird eine Fehlermeldung ausgegeben, die den Fehler beschreibt. Anschließend wird None zurückgegeben, um anzuzeigen, dass der Ladevorgang fehlgeschlagen ist.
-        print(f"❌ Fehler beim Laden der Datei: {e}")# Ausgabe einer Fehlermeldung, die den aufgetretenen Fehler beschreibt, wenn während des Ladevorgangs eine Ausnahme auftritt. Dies könnte z.B. passieren, wenn der Benutzer eine ungültige Nummer eingibt, die Datei nicht gefunden wird oder das Format der Datei nicht korrekt ist.
+    except Exception as e:
+        print(f"❌ Fehler beim Laden aus der Datenbank: {e}")
     return None
 
 def wuerfel_spiel(): # Hauptfunktion, die den Ablauf des Würfelspiels steuert. Sie ermöglicht das Laden eines bestehenden Spielstands oder das Starten eines neuen Spiels, verwaltet die Spielrunden und zeigt am Ende die Siegerehrung an.
@@ -139,6 +177,10 @@ def wuerfel_spiel(): # Hauptfunktion, die den Ablauf des Würfelspiels steuert. 
                 ergebnis = mein_wuerfel.rollen()
                 print_dice(ergebnis)
                 print(f"🎲 {GRUEN}{mein_wuerfel.name}{RESET} würfelt eine {FETT}{ergebnis}{RESET}!")
+                # Ausskommentiert da nutzen fragwürdig und Perfomance-Problem durch ständiges Speichern und unnötiges voll laufen der DB 
+                #naechster_spieler = (i + 1) % len(alle_wuerfel) # Berechnung des Index des nächsten Spieler*in, der am Zug sein wird, indem der aktuelle Index "i" um 1 erhöht und dann modulo der Anzahl der Spieler*innen genommen wird. Dies stellt sicher, dass der Index wieder bei 0 beginnt, wenn das Ende der Liste erreicht ist, und ermöglicht einen kontinuierlichen Spielablauf, bei dem die Spieler*innen in der richtigen Reihenfolge spielen.
+                #sichere_spielstand(alle_wuerfel, max_wuerfe, naechster_spieler, "wurf_save")
+                #print(f"{CYAN}Info: Spielstand wurde nach diesem Wurf gesichert.{RESET}")
 
         if not spiel_aktiv: 
             break
